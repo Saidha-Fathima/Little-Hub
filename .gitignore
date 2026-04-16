@@ -1,0 +1,14 @@
+# Sensitive files
+db.php
+
+# Uploaded files
+cover/
+books_pdf/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Node / vendor (if used)
+node_modules/
+vendor/
