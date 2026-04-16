@@ -1,14 +1,22 @@
-# Sensitive files
-db.php
+# Uploads (IMPORTANT)
+uploads/
+uploads/books/
+uploads/notes/
+uploads/covers/
 
-# Uploaded files
-cover/
-books_pdf/
+# Keep folders but ignore files
+!uploads/
+!uploads/.gitkeep
+!uploads/books/
+!uploads/books/.gitkeep
+!uploads/notes/
+!uploads/notes/.gitkeep
+!uploads/covers/
+!uploads/covers/.gitkeep
 
-# System files
 .DS_Store
 Thumbs.db
-
-# Node / vendor (if used)
-node_modules/
-vendor/
+*.log
+.vscode/
+.idea/
+.env
