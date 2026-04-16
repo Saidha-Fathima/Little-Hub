@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LittleHUB - Your Digital Learning Hub</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+   <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-book-open"></i>
+                <span>LittleHUB</span>
+            </div>
+            
+            <div class="nav-actions">
+                <!-- Functional Login/Register buttons -->
+                <button class="btn btn-outline" onclick="window.location.href='login.php'">Login</button>
+                <button class="btn btn-primary" onclick="window.location.href='register.php'">Register</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="mainContent">
+        <!-- Home Section -->
+        <section id="home" class="section active">
+            <div class="hero">
+                <div class="hero-content">
+                    <h1 class="hero-title">Welcome to LittleHUB</h1>
+                    <p class="hero-subtitle">Your comprehensive digital learning hub with books, notes, and more</p>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary btn-lg" onclick="window.location.href='#books'">Explore Books</button>
+                        <button class="btn btn-outline btn-lg" onclick="window.location.href='#notes'">Download Notes</button>
+                    </div>
+                </div>
+                <div class="hero-image">
+                    <img src="lithubimages/library.jpeg" alt="Library">
+                </div>
+            </div>
+            
+            <div class="features">
+                <div class="container">
+                    <h2 class="section-title">Our Features</h2>
+                    <div class="features-grid">
+                        <div class="feature-card" onclick="window.location.href='#books'">
+                            <div class="feature-icon">
+                                <i class="fas fa-book-reader"></i>
+                            </div>
+                            <h3>Online Reading</h3>
+                            <p>Access thousands of books online with our advanced reading interface</p>
+                        </div>
+                        <div class="feature-card" onclick="window.location.href='#store'">
+                            <div class="feature-icon">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <h3>Buy Books</h3>
+                            <p>Purchase physical and digital books from our extensive catalog</p>
+                        </div>
+                        <div class="feature-card" onclick="window.location.href='#notes'">
+                            <div class="feature-icon">
+                                <i class="fas fa-download"></i>
+                            </div>
+                            <h3>College Notes</h3>
+                            <p>Download comprehensive notes for various college subjects</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
