@@ -8,24 +8,67 @@ if(!isset($_SESSION['user_id']) || $_SESSION['user_role'] != 'admin'){
 
 include '../db.php';
 
-/* ADD NOTE */
+/* ========= ADD NOTE ========= */
 if(isset($_POST['add_note'])){
-    $subject = $_POST['subject'];
-    $title = $_POST['title'];
 
-    $file = $_FILES['file']['name'];
-    move_uploaded_file($_FILES['file']['tmp_name'], "../uploads/notes/".$file);
+    $subject = trim($_POST['subject']);
+    $title = trim($_POST['title']);
 
-    mysqli_query($conn,"INSERT INTO notes(subject,title,file_path,uploaded_by)
-    VALUES('$subject','$title','uploads/notes/$file',".$_SESSION['user_id'].")");
+    $fileName = time() . "_" . basename($_FILES['file']['name']);
+    $filePath = "uploads/notes/".$fileName;
+
+    if(!file_exists("../uploads/notes")){
+        mkdir("../uploads/notes",0755,true);
+    }
+
+    move_uploaded_file($_FILES['file']['tmp_name'], "../".$filePath);
+
+    $stmt = $conn->prepare("INSERT INTO notes(subject,title,file_path,uploaded_by) VALUES(?,?,?,?)");
+    $stmt->bind_param("sssi",$subject,$title,$filePath,$_SESSION['user_id']);
+    $stmt->execute();
+
+    header("Location: manage_notes.php");
+    exit();
 }
 
-/* DELETE NOTE */
+/* ========= FETCH EDIT ========= */
+$editData = array();
+
+if(isset($_GET['edit'])){
+    $id = intval($_GET['edit']);
+    $res = mysqli_query($conn,"SELECT * FROM notes WHERE note_id=$id");
+    if($res){
+        $editData = mysqli_fetch_assoc($res);
+    }
+}
+
+/* ========= UPDATE ========= */
+if(isset($_POST['update_note'])){
+
+    $id = intval($_POST['note_id']);
+    $subject = trim($_POST['subject']);
+    $title = trim($_POST['title']);
+
+    $stmt = $conn->prepare("UPDATE notes SET subject=?, title=? WHERE note_id=?");
+    $stmt->bind_param("ssi",$subject,$title,$id);
+    $stmt->execute();
+
+    header("Location: manage_notes.php");
+    exit();
+}
+
+/* ========= DELETE ========= */
 if(isset($_GET['delete'])){
-    mysqli_query($conn,"DELETE FROM notes WHERE note_id=".$_GET['delete']);
+    $id = intval($_GET['delete']);
+    $stmt = $conn->prepare("DELETE FROM notes WHERE note_id=?");
+    $stmt->bind_param("i",$id);
+    $stmt->execute();
+
+    header("Location: manage_notes.php");
+    exit();
 }
 
-/* FETCH NOTES */
+/* ========= FETCH ALL ========= */
 $notes = mysqli_query($conn,"SELECT * FROM notes ORDER BY note_id DESC");
 ?>
 
@@ -38,41 +81,30 @@ $notes = mysqli_query($conn,"SELECT * FROM notes ORDER BY note_id DESC");
 <style>
 
 /* RESET */
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
+*{margin:0;padding:0;box-sizing:border-box;}
 
 body{
     font-family:Segoe UI, sans-serif;
     background:#f4f6fb;
 }
 
-/* WRAPPER */
-.wrapper{
-    display:flex;
-}
+.wrapper{display:flex;}
 
-/* SIDEBAR (UNCHANGED) */
+/* SIDEBAR */
 .sidebar{
     width:230px;
     height:100vh;
     background:linear-gradient(180deg,#667eea,#764ba2);
     color:#fff;
-    padding:15px;
     position:fixed;
-    top:0;
-    left:0;
     display:flex;
     flex-direction:column;
     justify-content:space-between;
+    padding:15px;
+    box-shadow:4px 0 15px rgba(0,0,0,0.15);
 }
 
-.sidebar h2{
-    font-size:16px;
-    margin-bottom:15px;
-}
+.sidebar h2{font-size:16px;margin-bottom:15px;}
 
 .sidebar a{
     display:block;
@@ -81,7 +113,6 @@ body{
     padding:10px;
     border-radius:8px;
     margin-bottom:6px;
-    font-size:14px;
     transition:0.3s;
 }
 
@@ -89,10 +120,22 @@ body{
     background:#fff;
     color:#667eea;
     font-weight:700;
+    transform:translateX(5px);
 }
 
 .sidebar a:hover{
     background:rgba(255,255,255,0.2);
+}
+
+/* LOGOUT */
+.logout button{
+    width:100%;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    background:#fff;
+    color:#667eea;
+    font-weight:600;
 }
 
 /* MAIN */
@@ -102,7 +145,7 @@ body{
     width:calc(100% - 230px);
 }
 
-/* HEADER (UNCHANGED STYLE) */
+/* HEADER */
 .header{
     background:linear-gradient(135deg,#667eea,#764ba2);
     padding:15px 20px;
@@ -112,18 +155,13 @@ body{
     box-shadow:0 6px 18px rgba(0,0,0,0.15);
 }
 
-/* FORM CARD */
+/* FORM */
 .form-card{
     background:#fff;
     padding:20px;
     border-radius:12px;
-    box-shadow:0 4px 15px rgba(0,0,0,0.1);
     margin-bottom:20px;
-}
-
-.form-card h3{
-    margin-bottom:10px;
-    color:#667eea;
+    box-shadow:0 5px 15px rgba(0,0,0,0.08);
 }
 
 .form-card input{
@@ -134,29 +172,13 @@ body{
     border-radius:6px;
 }
 
-/* FILE INPUT STYLE */
-input[type="file"]{
-    width:100%;
-    padding:8px;
-    border:1px solid #ccc;
-    border-radius:6px;
-    background:#f9f9f9;
-    cursor:pointer;
-}
-
+/* FILE */
 input[type="file"]::file-selector-button{
     border:none;
     padding:8px 12px;
-    border-radius:6px;
     background:#667eea;
     color:#fff;
-    cursor:pointer;
-    margin-right:10px;
-    transition:0.3s;
-}
-
-input[type="file"]::file-selector-button:hover{
-    background:#5a67d8;
+    border-radius:6px;
 }
 
 /* BUTTON */
@@ -170,16 +192,12 @@ input[type="file"]::file-selector-button:hover{
     cursor:pointer;
 }
 
-.add-btn:hover{
-    background:#5a67d8;
-}
-
-/* TABLE CARD */
+/* TABLE */
 .table-card{
     background:#fff;
     padding:15px;
     border-radius:12px;
-    box-shadow:0 4px 15px rgba(0,0,0,0.1);
+    box-shadow:0 5px 15px rgba(0,0,0,0.08);
 }
 
 table{
@@ -202,28 +220,22 @@ tr:hover{
     background:#f9f9f9;
 }
 
-/* ICON */
-.icon-btn{
-    border:none;
-    background:none;
-    cursor:pointer;
-    font-size:16px;
+/* ICONS */
+.edit-icon{
+    color:#3498db; /* BLUE */
+    margin-right:10px;
 }
 
 .delete-icon{
-    color:#ff4d4d;
+    color:#e74c3c;
 }
 
-/* LOGOUT */
-.logout button{
-    width:100%;
-    padding:10px;
-    border:none;
-    border-radius:8px;
-    background:#fff;
-    color:#667eea;
-    font-weight:600;
+.icon-btn{
+    font-size:16px;
+    text-decoration:none;
 }
+
+/* IMAGE PREVIEW (optional future use) */
 
 </style>
 </head>
@@ -232,7 +244,7 @@ tr:hover{
 
 <div class="wrapper">
 
-<!-- SIDEBAR (UNCHANGED) -->
+<!-- SIDEBAR -->
 <div class="sidebar">
 
     <div>
@@ -256,24 +268,35 @@ tr:hover{
 <!-- MAIN -->
 <div class="main">
 
-<!-- HEADER (UNCHANGED) -->
 <div class="header">
-    <h2><i class="fas fa-sticky-note"></i> Manage Notes</h2>
+<h2>
+<i class="fas fa-sticky-note"></i>
+<?php echo isset($editData['note_id']) ? "Edit Note" : "Manage Notes"; ?>
+</h2>
 </div>
 
 <!-- FORM -->
 <div class="form-card">
 
-<h3>Add New Note</h3>
-
 <form method="POST" enctype="multipart/form-data">
 
-<input type="text" name="subject" placeholder="Subject" required>
-<input type="text" name="title" placeholder="Title" required>
+<input type="hidden" name="note_id"
+value="<?php echo isset($editData['note_id']) ? $editData['note_id'] : ''; ?>">
 
+<input type="text" name="subject" placeholder="Subject" required
+value="<?php echo isset($editData['subject']) ? $editData['subject'] : ''; ?>">
+
+<input type="text" name="title" placeholder="Title" required
+value="<?php echo isset($editData['title']) ? $editData['title'] : ''; ?>">
+
+<?php if(!isset($editData['note_id'])){ ?>
 <input type="file" name="file" required>
+<?php } ?>
 
-<button name="add_note" class="add-btn">Add Note</button>
+<button class="add-btn"
+name="<?php echo isset($editData['note_id']) ? 'update_note' : 'add_note'; ?>">
+<?php echo isset($editData['note_id']) ? 'Update Note' : 'Add Note'; ?>
+</button>
 
 </form>
 
@@ -290,14 +313,18 @@ tr:hover{
 <th>Action</th>
 </tr>
 
-<?php while($row=mysqli_fetch_assoc($notes)): ?>
+<?php while($row=mysqli_fetch_assoc($notes)){ ?>
 <tr>
-<td><?= $row['note_id'] ?></td>
-<td><?= $row['subject'] ?></td>
-<td><?= $row['title'] ?></td>
+<td><?php echo $row['note_id']; ?></td>
+<td><?php echo htmlspecialchars($row['subject']); ?></td>
+<td><?php echo htmlspecialchars($row['title']); ?></td>
 
 <td>
-<a href="?delete=<?= $row['note_id'] ?>"
+<a href="?edit=<?php echo $row['note_id']; ?>" class="icon-btn edit-icon">
+<i class="fas fa-edit"></i>
+</a>
+
+<a href="?delete=<?php echo $row['note_id']; ?>"
 onclick="return confirm('Delete this note?')"
 class="icon-btn delete-icon">
 <i class="fas fa-trash"></i>
@@ -305,14 +332,13 @@ class="icon-btn delete-icon">
 </td>
 
 </tr>
-<?php endwhile; ?>
+<?php } ?>
 
 </table>
 
 </div>
 
 </div>
-
 </div>
 
 </body>

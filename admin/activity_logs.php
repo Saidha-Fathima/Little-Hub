@@ -7,6 +7,39 @@ if(!isset($_SESSION['user_id']) || $_SESSION['user_role'] != 'admin'){
 }
 
 include '../db.php';
+
+/* FILTER VALUES */
+$user_id = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
+$action  = isset($_GET['action']) ? trim($_GET['action']) : '';
+$from    = isset($_GET['from']) ? $_GET['from'] : '';
+$to      = isset($_GET['to']) ? $_GET['to'] : '';
+
+/* USERS */
+$users = mysqli_query($conn,"SELECT user_id,name FROM users");
+
+/* QUERY */
+$sql = "
+SELECT a.*, u.name 
+FROM activity_log a
+JOIN users u ON a.user_id = u.user_id
+WHERE 1=1
+";
+
+if($user_id > 0){
+    $sql .= " AND a.user_id=$user_id";
+}
+
+if($action != ''){
+    $sql .= " AND a.action LIKE '%$action%'";
+}
+
+if($from != '' && $to != ''){
+    $sql .= " AND DATE(a.created_at) BETWEEN '$from' AND '$to'";
+}
+
+$sql .= " ORDER BY a.created_at DESC";
+
+$logs = mysqli_query($conn,$sql);
 ?>
 
 <!DOCTYPE html>
@@ -47,6 +80,7 @@ body{
     flex-direction:column;
     justify-content:space-between;
     padding:15px;
+    box-shadow:4px 0 15px rgba(0,0,0,0.15);
 }
 
 .sidebar h2{
@@ -62,13 +96,13 @@ body{
     border-radius:8px;
     margin-bottom:6px;
     font-size:14px;
-    transition:0.3s;
 }
 
 .sidebar a.active{
     background:#fff;
     color:#667eea;
     font-weight:700;
+    transform:translateX(5px);
 }
 
 .sidebar a:hover{
@@ -92,23 +126,57 @@ body{
     box-shadow:0 6px 18px rgba(0,0,0,0.15);
 }
 
-/* TABLE CARD */
+/* FILTER */
+.filter-card{
+    background:#fff;
+    padding:15px;
+    border-radius:12px;
+    margin-bottom:20px;
+    box-shadow:0 5px 15px rgba(0,0,0,0.08);
+}
+
+.filter-grid{
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    gap:10px;
+}
+
+input,select{
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:6px;
+    width:100%;
+}
+
+button{
+    background:#667eea;
+    color:#fff;
+    border:none;
+    padding:10px;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+/* TABLE */
 .table-card{
     background:#fff;
     padding:15px;
     border-radius:12px;
-    box-shadow:0 4px 15px rgba(0,0,0,0.1);
+    box-shadow:0 5px 15px rgba(0,0,0,0.08);
+    overflow-x:auto;
 }
 
 table{
     width:100%;
     border-collapse:collapse;
+    min-width:600px;
 }
 
 th,td{
     padding:12px;
     text-align:center;
     border-bottom:1px solid #eee;
+    white-space:nowrap;
 }
 
 th{
@@ -116,36 +184,52 @@ th{
     color:#fff;
 }
 
-tr:hover{
-    background:#f9f9f9;
-}
-
-/* BADGE STYLE */
 .badge{
-    display:inline-block;
+    background:#eef2ff;
     padding:5px 10px;
     border-radius:6px;
-    background:#eef2ff;
-    color:#333;
-    font-size:13px;
 }
 
-/* LOGOUT */
-.logout button{
-    width:100%;
-    padding:10px;
-    border:none;
-    border-radius:8px;
-    background:#fff;
-    color:#667eea;
-    font-weight:600;
-    cursor:pointer;
-    transition:0.25s;
+/* ================= RESPONSIVE ================= */
+
+@media(max-width: 992px){
+    .filter-grid{
+        grid-template-columns:1fr 1fr;
+    }
 }
 
-.logout button:hover{
-    background:#667eea;
-    color:#fff;
+@media(max-width: 768px){
+
+    .sidebar{
+        position:relative;
+        width:100%;
+        height:auto;
+        flex-direction:row;
+        overflow-x:auto;
+    }
+
+    .main{
+        margin-left:0;
+        width:100%;
+    }
+
+    .filter-grid{
+        grid-template-columns:1fr;
+    }
+
+    table{
+        min-width:650px;
+    }
+}
+
+@media(max-width: 480px){
+    .header h2{
+        font-size:16px;
+    }
+
+    .sidebar a{
+        font-size:12px;
+    }
 }
 
 </style>
@@ -155,71 +239,90 @@ tr:hover{
 
 <div class="wrapper">
 
-    <!-- SIDEBAR -->
-    <div class="sidebar">
+<!-- SIDEBAR -->
+<div class="sidebar">
 
-        <div>
-            <h2><i class="fas fa-user-shield"></i> LittleHUB Admin</h2>
+    <div>
+        <h2><i class="fas fa-user-shield"></i> LittleHUB Admin</h2>
 
-            <a href="admin_dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
-            <a href="manage_users.php"><i class="fas fa-users"></i> Manage Users</a>
-            <a href="manage_books.php"><i class="fas fa-book"></i> Manage Books</a>
-            <a href="manage_notes.php"><i class="fas fa-sticky-note"></i> Manage Notes</a>
-            <a href="activity_logs.php" class="active"><i class="fas fa-chart-line"></i> Activity Log</a>
-        </div>
-
-        <div class="logout">
-            <button onclick="location.href='../logout.php'">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
-        </div>
-
+        <a href="admin_dashboard.php"><i class="fas fa-home"></i> Dashboard</a>
+        <a href="manage_users.php"><i class="fas fa-users"></i> Users</a>
+        <a href="manage_books.php"><i class="fas fa-book"></i> Books</a>
+        <a href="manage_notes.php"><i class="fas fa-sticky-note"></i> Notes</a>
+        <a href="activity_logs.php" class="active"><i class="fas fa-chart-line"></i> Logs</a>
     </div>
 
-    <!-- MAIN -->
-    <div class="main">
-
-        <!-- HEADER -->
-        <div class="header">
-            <h2><i class="fas fa-chart-line"></i> Activity Logs</h2>
-        </div>
-
-        <!-- TABLE -->
-        <div class="table-card">
-
-            <table>
-                <tr>
-                    <th>User</th>
-                    <th>Action</th>
-                    <th>Date</th>
-                </tr>
-
-                <?php
-                include '../db.php';
-
-                $logs = mysqli_query($conn,"
-                SELECT a.*, u.name 
-                FROM activity_log a
-                JOIN users u ON a.user_id = u.user_id
-                ORDER BY a.created_at DESC
-                ");
-
-                while($row=mysqli_fetch_assoc($logs)):
-                ?>
-
-                <tr>
-                    <td><?= $row['name'] ?></td>
-                    <td><span class="badge"><?= $row['action'] ?></span></td>
-                    <td><?= $row['created_at'] ?></td>
-                </tr>
-
-                <?php endwhile; ?>
-
-            </table>
-
-        </div>
-
+    <div class="logout">
+        <button onclick="location.href='../logout.php'">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
     </div>
+
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- HEADER -->
+<div class="header">
+<h2><i class="fas fa-chart-line"></i> Activity Logs</h2>
+</div>
+
+<!-- FILTER -->
+<div class="filter-card">
+
+<form method="GET" class="filter-grid">
+
+<!-- USER -->
+<select name="user_id">
+<option value="0">All Users</option>
+<?php while($u=mysqli_fetch_assoc($users)){ ?>
+<option value="<?php echo $u['user_id']; ?>"
+<?php if($user_id==$u['user_id']) echo "selected"; ?>>
+<?php echo $u['name']; ?>
+</option>
+<?php } ?>
+</select>
+
+<!-- ACTION -->
+<input type="text" name="action" placeholder="Search activity"
+value="<?php echo $action; ?>">
+
+<!-- FROM -->
+<input type="date" name="from" value="<?php echo $from; ?>">
+
+<!-- TO -->
+<input type="date" name="to" value="<?php echo $to; ?>">
+
+<button type="submit">Filter</button>
+
+</form>
+
+</div>
+
+<!-- TABLE -->
+<div class="table-card">
+
+<table>
+<tr>
+<th>User</th>
+<th>Action</th>
+<th>Date</th>
+</tr>
+
+<?php while($row=mysqli_fetch_assoc($logs)){ ?>
+<tr>
+<td><?php echo htmlspecialchars($row['name']); ?></td>
+<td><span class="badge"><?php echo htmlspecialchars($row['action']); ?></span></td>
+<td><?php echo $row['created_at']; ?></td>
+</tr>
+<?php } ?>
+
+</table>
+
+</div>
+
+</div>
 
 </div>
 
